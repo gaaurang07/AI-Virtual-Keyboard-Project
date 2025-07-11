@@ -8,6 +8,9 @@ from PIL import Image, ImageDraw, ImageFont # Images ko edit karne ke liye, yaha
 
 #                           Web Cam
 cap = cv2.VideoCapture(0) # Webcam ko on karta hai (0 matlab default camera).
+if not cap.isOpened():
+    print("Error: Webcam nahi khul rahi hai. Check karo!")
+    exit()
 cap.set(3, 1280) # Width ko 1280 pixels set karta hai.
 cap.set(4, 720) # Height ko 720 pixels set karta hai (720p resolution).
 
@@ -75,6 +78,7 @@ last_click_time = 0 # Last click ka time track karta hai.
 while True:
     success, frame = cap.read()
     if not success: 
+        print("Error: Frame nahi mil raha, webcam check karo!")
         break
     frame = cv2.flip(frame, 1)
     hands, frame = detector.findHands(frame, flipType=False)
@@ -238,9 +242,9 @@ while True:
     cv2.waitKey(1): 1 millisecond wait karta hai, ESC key (27) press hone pe loop break hota hai.
     """
 
-    #                           Cleanup
-    cap.release()
-    cv2.destroyAllWindows()
-    """cap.release(): Webcam ko band karta hai.
-    cv2.destroyAllWindows(): Sab windows close karta hai.
-    """
+#                           Cleanup
+cap.release()
+cv2.destroyAllWindows()
+"""cap.release(): Webcam ko band karta hai.
+cv2.destroyAllWindows(): Sab windows close karta hai.
+"""
