@@ -1,12 +1,27 @@
-from flask import Flask, render_template
-import os
+from flask import Flask, render_template, request, jsonify
+import cv2
+import numpy as np
+from cvzone.HandTrackingModule import HandDetector
 
 app = Flask(__name__)
+detector = HandDetector(detectionCon=0.8, maxHands=1)
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # load templates/index.html
+    return render_template('index.html')
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port)
+@app.route('/predict', methods=['POST'])
+def predict():
+    file = request.files['image']
+    npimg = np.frombuffer(file.read(), np.uint8)
+    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+
+    hands, img = detector.findHands(img)
+    if hands:
+        # You can update this with actual gesture logic
+        return jsonify({'result': 'Hand Detected'})
+    else:
+        return jsonify({'result': 'No Hand'})
+
+if __name__ == '__main__':
+    app.run(debug=True)
