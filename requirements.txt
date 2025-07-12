@@ -1,5 +1,5 @@
-flask
-opencv-python
-cvzone
-numpy
+Flask==2.3.2
+gunicorn==20.1.0
+opencv-python==4.5.5.64
+numpy==1.21.6
 mediapipe==0.10.9  # or compatible version < 3.13
