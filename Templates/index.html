@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Virtual Keyboard</title>
+</head>
+<body>
+    <h1>AI Virtual Keyboard</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+
+    <script>
+        // Access webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+                document.getElementById('video').srcObject = stream;
+            })
+            .catch(function (err) {
+                console.log("Error: " + err);
+            });
+    </script>
+</body>
+</html>
