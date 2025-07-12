@@ -1,8 +1,10 @@
 from flask import Flask, render_template, Response
+from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Keys Layout
 keys = [
@@ -26,7 +28,6 @@ final_text = ""
 
 def gen_frames():
     global final_text
-    # Placeholder: Browser se video stream ayega, abhi static frame banate hain
     while True:
         # Create a blank frame (1280x720)
         frame = np.zeros((720, 1280, 3), dtype=np.uint8)
@@ -37,7 +38,7 @@ def gen_frames():
                       (x_start + (10 * key_w + 9 * key_spacing) + box_padding, y_start + (3 * key_h + 2 * key_spacing) + box_padding),
                       keyboard_box_color, cv2.FILLED)
         
-        # Draw Keys
+        # Draw Keys (updated by client via WebSocket)
         for row_idx, row in enumerate(keys):
             for col_idx, key in enumerate(row):
                 x = x_start + col_idx * (key_w + key_spacing)
@@ -62,6 +63,18 @@ def gen_frames():
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+@socketio.on('key_press')
+def handle_key_press(data):
+    global final_text
+    key = data['key']
+    if key == "<":
+        final_text = final_text[:-1]
+    elif key == "SPACE":
+        final_text += " "
+    else:
+        final_text += key
+    emit('update_text', {'text': final_text}, broadcast=True)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -71,4 +84,4 @@ def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
