@@ -1,43 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Virtual Keyboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Keyboard with Gesture</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    #container { display: flex; flex-direction: column; align-items: center; height: 100%; }
+    #video { flex: 1; width: 100%; object-fit: cover; }
+    #keyboard { display: grid; grid-template-columns: repeat(10, 1fr); width: 100%; background: #333; }
+    .key { padding: 20px; margin: 5px; background: #555; color: white; text-align: center; user-select: none; }
+    .key.space { grid-column: span 2; }
+    #output { background: #000; color: #0f0; padding: 10px; width: 100%; font-size: 1.2em; }
+  </style>
 </head>
 <body>
-  <h1>Virtual Keyboard with Gesture</h1>
-  <video id="video" width="640" height="480" autoplay></video>
-  <p>Predicted: <span id="output">None</span></p>
+  <div id="container">
+    <video id="video" autoplay playsinline></video>
+    <div id="output">Typed: <span id="typed"></span></div>
+    <div id="keyboard">
+      <!-- Row 1 -->
+      <div class="key">Q</div><div class="key">W</div><div class="key">E</div><div class="key">R</div><div class="key">T</div><div class="key">Y</div><div class="key">U</div><div class="key">I</div><div class="key">O</div><div class="key">P</div>
+      <!-- Row 2 -->
+      <div class="key">A</div><div class="key">S</div><div class="key">D</div><div class="key">F</div><div class="key">G</div><div class="key">H</div><div class="key">J</div><div class="key">K</div><div class="key">L</div><div class="key">&lt;</div>
+      <!-- Row 3 -->
+      <div class="key">Z</div><div class="key">X</div><div class="key">C</div><div class="key">V</div><div class="key">B</div><div class="key">N</div><div class="key">M</div><div class="key space">SPACE</div><div></div><div></div>
+    </div>
+  </div>
 
   <script>
     const video = document.getElementById('video');
-    const output = document.getElementById('output');
+    const typed = document.getElementById('typed');
 
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
+    // Start webcam
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    }
+    startCamera();
 
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        setInterval(() => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataURL = canvas.toDataURL('image/jpeg');
-
-          fetch('/predict', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: dataURL })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.prediction) {
-              output.innerText = data.prediction;
-            }
-          });
-        }, 1000);
-      });
+    // Placeholder for detection logic
+    let lastKey = null;
+    setInterval(() => {
+      // Replace this stub with your GET/POST fetch to Flask /predict endpoint
+      const next = null; // e.g., 'A' or 'SPACE' or '<'
+      if (next && next !== lastKey) {
+        if (next === '<') typed.textContent = typed.textContent.slice(0, -1);
+        else if (next === 'SPACE') typed.textContent += ' ';
+        else typed.textContent += next;
+        lastKey = next;
+      }
+    }, 200);
   </script>
 </body>
 </html>
