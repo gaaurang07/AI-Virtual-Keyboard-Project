@@ -2,4 +2,4 @@ flask
 opencv-python
 cvzone
 numpy
-mediapipe
+mediapipe==0.10.9  # or compatible version < 3.13
