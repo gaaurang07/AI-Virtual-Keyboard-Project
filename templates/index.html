@@ -1,56 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Virtual Keyboard with Gesture</title>
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #container { display: flex; flex-direction: column; align-items: center; height: 100%; }
-    #video { flex: 1; width: 100%; object-fit: cover; }
-    #keyboard { display: grid; grid-template-columns: repeat(10, 1fr); width: 100%; background: #333; }
-    .key { padding: 20px; margin: 5px; background: #555; color: white; text-align: center; user-select: none; }
-    .key.space { grid-column: span 2; }
-    #output { background: #000; color: #0f0; padding: 10px; width: 100%; font-size: 1.2em; }
-  </style>
+    <meta charset="UTF-8">
+    <title>AI Virtual Keyboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <div id="container">
+    <h1>AI Virtual Keyboard</h1>
+
     <video id="video" autoplay playsinline></video>
-    <div id="output">Typed: <span id="typed"></span></div>
+
     <div id="keyboard">
-      <!-- Row 1 -->
-      <div class="key">Q</div><div class="key">W</div><div class="key">E</div><div class="key">R</div><div class="key">T</div><div class="key">Y</div><div class="key">U</div><div class="key">I</div><div class="key">O</div><div class="key">P</div>
-      <!-- Row 2 -->
-      <div class="key">A</div><div class="key">S</div><div class="key">D</div><div class="key">F</div><div class="key">G</div><div class="key">H</div><div class="key">J</div><div class="key">K</div><div class="key">L</div><div class="key">&lt;</div>
-      <!-- Row 3 -->
-      <div class="key">Z</div><div class="key">X</div><div class="key">C</div><div class="key">V</div><div class="key">B</div><div class="key">N</div><div class="key">M</div><div class="key space">SPACE</div><div></div><div></div>
+        <button>Q</button><button>W</button><button>E</button>
+        <button>R</button><button>T</button><button>Y</button>
+        <button>U</button><button>I</button><button>O</button><button>P</button>
+        <br>
+        <button>A</button><button>S</button><button>D</button>
+        <button>F</button><button>G</button><button>H</button>
+        <button>J</button><button>K</button><button>L</button>
+        <br>
+        <button>Z</button><button>X</button><button>C</button>
+        <button>V</button><button>B</button><button>N</button>
+        <button>M</button>
     </div>
-  </div>
 
-  <script>
-    const video = document.getElementById('video');
-    const typed = document.getElementById('typed');
+    <p id="predicted">Predicted: None</p>
 
-    // Start webcam
-    async function startCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      video.srcObject = stream;
-    }
-    startCamera();
+    <script>
+        const video = document.getElementById('video');
+        const predicted = document.getElementById('predicted');
 
-    // Placeholder for detection logic
-    let lastKey = null;
-    setInterval(() => {
-      // Replace this stub with your GET/POST fetch to Flask /predict endpoint
-      const next = null; // e.g., 'A' or 'SPACE' or '<'
-      if (next && next !== lastKey) {
-        if (next === '<') typed.textContent = typed.textContent.slice(0, -1);
-        else if (next === 'SPACE') typed.textContent += ' ';
-        else typed.textContent += next;
-        lastKey = next;
-      }
-    }, 200);
-  </script>
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            });
+
+        // Send frame every 2 seconds
+        setInterval(() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('image', blob);
+
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    predicted.innerText = 'Predicted: ' + data.result;
+                });
+            }, 'image/jpeg');
+        }, 2000);
+    </script>
 </body>
 </html>
