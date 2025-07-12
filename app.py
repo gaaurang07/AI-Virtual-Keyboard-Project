@@ -1,15 +1,8 @@
 from flask import Flask, render_template, Response
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
-
-# Webcam setup (will be handled by browser)
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("Webcam nahi khul rahi!")
-    exit()
 
 # Keys Layout
 keys = [
@@ -33,11 +26,10 @@ final_text = ""
 
 def gen_frames():
     global final_text
+    # Placeholder: Browser se video stream ayega, abhi static frame banate hain
     while True:
-        success, frame = cap.read()
-        if not success:
-            break
-        frame = cv2.flip(frame, 1)
+        # Create a blank frame (1280x720)
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
         
         # Draw Keyboard Background Box
         box_padding = 40
@@ -45,7 +37,7 @@ def gen_frames():
                       (x_start + (10 * key_w + 9 * key_spacing) + box_padding, y_start + (3 * key_h + 2 * key_spacing) + box_padding),
                       keyboard_box_color, cv2.FILLED)
         
-        # Simple Key Drawing (no hand detection yet)
+        # Draw Keys
         for row_idx, row in enumerate(keys):
             for col_idx, key in enumerate(row):
                 x = x_start + col_idx * (key_w + key_spacing)
