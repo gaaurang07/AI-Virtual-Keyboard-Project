@@ -3,17 +3,28 @@
 <head>
     <title>Virtual Keyboard</title>
     <style>
-        #video {
-            display: none;
-        }
+        #video { display: none; }
+        canvas { position: absolute; top: 0; left: 0; }
+        #textDisplay { position: absolute; top: 140px; left: 170px; color: white; font-size: 20px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
 </head>
 <body>
     <h1>Virtual Keyboard</h1>
     <video id="video" width="1280" height="720" autoplay></video>
+    <canvas id="canvas" width="1280" height="720"></canvas>
+    <div id="textDisplay"></div>
     <img src="{{ url_for('video_feed') }}" width="1280" height="720">
     <script>
         const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const canvasCtx = canvas.getContext('2d');
+        const textDisplay = document.getElementById('textDisplay');
+        const socket = io();
+
+        // Webcam Access
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(stream => {
@@ -21,6 +32,84 @@
                 })
                 .catch(err => console.log("Webcam access error: ", err));
         }
+
+        // MediaPipe Hands
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({
+            maxNumHands: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.5
+        });
+        hands.onResults(onResults);
+
+        // Camera Setup
+        const camera = new Camera(video, {
+            onFrame: async () => {
+                await hands.send({image: video});
+            },
+            width: 1280,
+            height: 720
+        });
+        camera.start();
+
+        // Hand Tracking Logic
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            if (results.multiHandLandmarks) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawLandmarks(canvasCtx, landmarks);
+                    const indexTip = landmarks[8]; // Index finger tip
+                    let selectedKey = null;
+                    const keys = [
+                        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+                        ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+                        ["Z", "X", "C", "V", "B", "N", "M", "<", "SPACE"]
+                    ];
+                    for (let row = 0; row < keys.length; row++) {
+                        for (let col = 0; col < keys[row].length; col++) {
+                            const x = 200 + col * (70 + 15);
+                            const y = 200 + row * (70 + 15);
+                            const keyBoxW = keys[row][col] === "SPACE" ? 155 : 70;
+                            if (indexTip.x * 1280 > x && indexTip.x * 1280 < x + keyBoxW &&
+                                indexTip.y * 720 > y && indexTip.y * 720 < y + 70) {
+                                selectedKey = keys[row][col];
+                                canvasCtx.fillStyle = 'green';
+                                canvasCtx.fillRect(x, y, keyBoxW, 70);
+                                canvasCtx.strokeStyle = '#c8c8c8';
+                                canvasCtx.lineWidth = 2;
+                                canvasCtx.strokeRect(x, y, keyBoxW, 70);
+                                canvasCtx.fillStyle = 'black';
+                                canvasCtx.fillText(keys[row][col], x + keyBoxW / 2 - 10, y + 70 / 2 + 10);
+                                break;
+                            }
+                        }
+                    }
+                    if (selectedKey && Date.now() - (window.lastClickTime || 0) > 500) {
+                        socket.emit('key_press', { key: selectedKey });
+                        new Audio('https://www.soundjay.com/buttons/beep-01a.mp3').play(); // Replace with your sound
+                        window.lastClickTime = Date.now();
+                    }
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        // Draw Landmarks (optional visualization)
+        function drawLandmarks(ctx, landmarks) {
+            ctx.fillStyle = 'red';
+            for (const landmark of landmarks) {
+                ctx.beginPath();
+                ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // Update Text from Server
+        socket.on('update_text', (data) => {
+            textDisplay.textContent = data.text;
+        });
     </script>
 </body>
 </html>
