@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Virtual Keyboard</title>
+</head>
+<body>
+  <h1>Virtual Keyboard with Gesture</h1>
+  <video id="video" width="640" height="480" autoplay></video>
+  <p>Predicted: <span id="output">None</span></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const output = document.getElementById('output');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        setInterval(() => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataURL = canvas.toDataURL('image/jpeg');
+
+          fetch('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: dataURL })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.prediction) {
+              output.innerText = data.prediction;
+            }
+          });
+        }, 1000);
+      });
+  </script>
+</body>
+</html>
