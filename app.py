@@ -2,10 +2,10 @@ from flask import Flask, render_template, request, jsonify
 import cv2
 import numpy as np
 from cvzone.HandTrackingModule import HandDetector
-import os  # ✅ added for dynamic port access
+import os
 
 app = Flask(__name__)
-detector = HandDetector(detectionCon=0.8, maxHands=1)
+detector = HandDetector(detectionCon=0.8, maxHands=1, modelComplexity=0)  # 👈 fix added here
 
 @app.route('/')
 def index():
@@ -23,7 +23,6 @@ def predict():
     else:
         return jsonify({'result': 'No Hand'})
 
-# ✅ this part is important for Render to detect the app
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # get port from Render
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
